@@ -90,6 +90,7 @@ def _load_notification_config(config_data: Dict) -> Dict:
     batch_size = advanced.get("batch_size", {})
 
     max_accounts_env = _get_env_int_or_none("MAX_ACCOUNTS_PER_CHANNEL")
+    max_news_items_env = _get_env_int_or_none("MAX_NEWS_ITEMS_PER_PUSH")
 
     return {
         "ENABLE_NOTIFICATION": notification.get("enabled", True),
@@ -101,6 +102,7 @@ def _load_notification_config(config_data: Dict) -> Dict:
         "BATCH_SEND_INTERVAL": advanced.get("batch_send_interval", 1.0),
         "FEISHU_MESSAGE_SEPARATOR": advanced.get("feishu_message_separator", "---"),
         "MAX_ACCOUNTS_PER_CHANNEL": max_accounts_env if max_accounts_env is not None else advanced.get("max_accounts_per_channel", 3),
+        "MAX_NEWS_ITEMS_PER_PUSH": max_news_items_env if max_news_items_env is not None else notification.get("max_news_items", 0),
     }
 
 

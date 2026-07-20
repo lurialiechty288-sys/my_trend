@@ -206,7 +206,7 @@ report:
 
   rank_threshold: 5                   # 排名高亮阈值（影响展示强调，不改变抓取范围）
 
-  max_news_per_keyword: 0             # 每个关键词/标签最大显示数量（0=不限制，仅影响展示裁剪）
+  max_news_per_keyword: 3             # 每个关键词/标签最多 3 条，兼顾主题多样性
 
 
 # ===============================================================
@@ -285,7 +285,7 @@ display:
   standalone:
     platforms: ["zhihu", "wallstreetcn-hot", "cls-hot"]     # 热榜平台 ID 列表（如 ["zhihu", "weibo"]）
     rss_feeds: ["github-trending-daily", "hacker-news", "reddit-local-llama", "x-openai", "youtube-openai"]  # RSS 源 ID 列表（如 ["hacker-news"]）
-    max_items: 20                                # 每个源最多展示条数（0=不限制）
+    max_items: 5                                 # 每个独立源最多 5 条，避免单一来源刷屏
 
 
 # ===============================================================
@@ -300,6 +300,7 @@ display:
 notification:
   enabled: true                       # 是否启用通知功能（true=启用, false=关闭）—— 总开关
                                       # 开启 schedule 后此项仍为总开关：false=永远不推送，true=由调度控制
+  max_news_items: 30                  # 单次推送最多展示 30 条新闻（跨热榜/RSS/独立源合计）
 
   # 推送渠道配置
   channels:
@@ -459,7 +460,7 @@ ai_analysis:
                                     # follow_report = 跟随 report.mode（默认）
                                     # daily / current / incremental = 强制使用指定模式
 
-  max_news_for_analysis: 100        # 参与分析的新闻数量上限（控制 token 成本的关键项）
+  max_news_for_analysis: 30         # 普通热榜+RSS 最多分析 30 条；独立源另按上方每源 5 条
                                     # 热榜优先占用配额，RSS 用剩余配额，独立展示区不受此限制
 
   include_rss: true                 # 是否包含 RSS 内容进行分析（true=包含, false=不包含）

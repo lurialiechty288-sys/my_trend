@@ -12,6 +12,7 @@
 
 from __future__ import annotations
 
+import copy
 import time
 from typing import TYPE_CHECKING, Any, Callable, Dict, List, Optional
 
@@ -69,6 +70,104 @@ class NotificationDispatcher:
         self.split_content_func = split_content_func
         self.max_accounts = config.get("MAX_ACCOUNTS_PER_CHANNEL", 3)
         self.translator = translator
+
+    @staticmethod
+    def _trim_grouped_items(groups: Optional[List[Dict]], remaining: int) -> tuple:
+        """按现有排序裁剪分组条目，返回（裁剪结果, 剩余额度, 保留数）。"""
+        if not groups or remaining <= 0:
+            return [], max(remaining, 0), 0
+
+        trimmed = []
+        kept = 0
+        for group in groups:
+            if remaining <= 0:
+                break
+            titles = group.get("titles", [])
+            selected = titles[:remaining]
+            if not selected:
+                continue
+            copied = copy.deepcopy(group)
+            copied["titles"] = selected
+            copied["count"] = len(selected)
+            trimmed.append(copied)
+            count = len(selected)
+            kept += count
+            remaining -= count
+        return trimmed, remaining, kept
+
+    @staticmethod
+    def _trim_standalone_items(standalone_data: Optional[Dict], remaining: int) -> tuple:
+        """裁剪独立展示区中的平台和 RSS 条目。"""
+        if not standalone_data or remaining <= 0:
+            return None, max(remaining, 0), 0
+
+        trimmed = {"platforms": [], "rss_feeds": []}
+        kept = 0
+        for section in ("platforms", "rss_feeds"):
+            for source in standalone_data.get(section, []):
+                if remaining <= 0:
+                    break
+                selected = source.get("items", [])[:remaining]
+                if not selected:
+                    continue
+                copied = copy.deepcopy(source)
+                copied["items"] = selected
+                trimmed[section].append(copied)
+                count = len(selected)
+                kept += count
+                remaining -= count
+
+        if not trimmed["platforms"] and not trimmed["rss_feeds"]:
+            return None, remaining, kept
+        return trimmed, remaining, kept
+
+    def _apply_news_item_limit(
+        self,
+        report_data: Dict,
+        rss_items: Optional[List[Dict]],
+        rss_new_items: Optional[List[Dict]],
+        standalone_data: Optional[Dict],
+        display_regions: Dict,
+    ) -> tuple:
+        """限制单次通知实际展示的新闻条目总数。AI 分析文本不计入条目数。"""
+        limit = self.config.get("MAX_NEWS_ITEMS_PER_PUSH", 0)
+        if not isinstance(limit, int) or limit <= 0:
+            return report_data, rss_items, rss_new_items, standalone_data
+
+        report_data = copy.deepcopy(report_data)
+        rss_items = copy.deepcopy(rss_items) if rss_items else None
+        rss_new_items = copy.deepcopy(rss_new_items) if rss_new_items else None
+        standalone_data = copy.deepcopy(standalone_data) if standalone_data else None
+
+        remaining = limit
+        kept = 0
+        configured_order = self.config.get("DISPLAY", {}).get("REGION_ORDER", [])
+        region_order = list(dict.fromkeys(configured_order + ["hotlist", "rss", "new_items", "standalone"]))
+
+        for region in region_order:
+            if region == "hotlist" and display_regions.get("HOTLIST", True):
+                report_data["stats"], remaining, count = self._trim_grouped_items(
+                    report_data.get("stats", []), remaining
+                )
+                kept += count
+            elif region == "rss" and display_regions.get("RSS", True):
+                rss_items, remaining, count = self._trim_grouped_items(rss_items, remaining)
+                kept += count
+            elif region == "new_items" and display_regions.get("NEW_ITEMS", True):
+                report_data["new_titles"], remaining, count = self._trim_grouped_items(
+                    report_data.get("new_titles", []), remaining
+                )
+                kept += count
+                rss_new_items, remaining, count = self._trim_grouped_items(rss_new_items, remaining)
+                kept += count
+            elif region == "standalone" and display_regions.get("STANDALONE", False):
+                standalone_data, remaining, count = self._trim_standalone_items(
+                    standalone_data, remaining
+                )
+                kept += count
+
+        print(f"[推送] 新闻条目总量限制: 最多 {limit} 条，本次展示 {kept} 条")
+        return report_data, rss_items, rss_new_items, standalone_data
 
     def translate_content(
         self,
@@ -282,6 +381,10 @@ class NotificationDispatcher:
 
         # 获取区域显示配置
         display_regions = self.config.get("DISPLAY", {}).get("REGIONS", {})
+
+        report_data, rss_items, rss_new_items, standalone_data = self._apply_news_item_limit(
+            report_data, rss_items, rss_new_items, standalone_data, display_regions
+        )
 
         # 执行翻译（如果启用，根据 display_regions 跳过不展示的区域）
         # skip_translation=True 时，RSS 已在上游翻译过，跳过 RSS 重复翻译

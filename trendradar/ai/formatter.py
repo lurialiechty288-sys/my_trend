@@ -15,6 +15,26 @@ def _escape_html(text: str) -> str:
     return html_lib.escape(text) if text else ""
 
 
+_INLINE_LINK_RE = re.compile(r"\[([^\]\n]+)\]\((https?://[^\s)]+)\)")
+
+
+def _render_inline_links_html(text: str) -> str:
+    """安全地把 Markdown 行内链接转换为 HTML，其余内容全部转义。"""
+    if not text:
+        return ""
+
+    parts = []
+    last_end = 0
+    for match in _INLINE_LINK_RE.finditer(text):
+        parts.append(_escape_html(text[last_end:match.start()]))
+        label = _escape_html(match.group(1))
+        url = html_lib.escape(match.group(2), quote=True)
+        parts.append(f'<a href="{url}">{label}</a>')
+        last_end = match.end()
+    parts.append(_escape_html(text[last_end:]))
+    return "".join(parts)
+
+
 def _format_list_content(text: str) -> str:
     """
     格式化列表内容，确保序号前有换行
@@ -118,6 +138,11 @@ def _render_ai_analysis_markdown_like(
             ["**RSS 深度洞察**", _format_list_content(result.rss_insights), ""]
         )
 
+    if result.github_projects:
+        lines.extend(
+            ["**GitHub 项目速览**", _format_list_content(result.github_projects), ""]
+        )
+
     if result.outlook_strategy:
         lines.extend(
             ["**研判策略建议**", _format_list_content(result.outlook_strategy), ""]
@@ -181,6 +206,11 @@ def render_ai_analysis_dingtalk(result: AIAnalysisResult) -> str:
             ["#### RSS 深度洞察", _format_list_content(result.rss_insights), ""]
         )
 
+    if result.github_projects:
+        lines.extend(
+            ["#### GitHub 项目速览", _format_list_content(result.github_projects), ""]
+        )
+
     if result.outlook_strategy:
         lines.extend(
             ["#### 研判策略建议", _format_list_content(result.outlook_strategy), ""]
@@ -217,6 +247,9 @@ def render_ai_analysis_plain(result: AIAnalysisResult) -> str:
     if result.rss_insights:
         lines.extend(["[RSS 深度洞察]", _format_list_content(result.rss_insights), ""])
 
+    if result.github_projects:
+        lines.extend(["[GitHub 项目速览]", _format_list_content(result.github_projects), ""])
+
     if result.outlook_strategy:
         lines.extend(["[研判策略建议]", _format_list_content(result.outlook_strategy), ""])
 
@@ -243,24 +276,27 @@ def render_ai_analysis_telegram(result: AIAnalysisResult) -> str:
     lines = ["<b>✨ AI 热点分析</b>", ""]
 
     if result.core_trends:
-        lines.extend(["<b>核心热点态势</b>", _escape_html(_format_list_content(result.core_trends)), ""])
+        lines.extend(["<b>核心热点态势</b>", _render_inline_links_html(_format_list_content(result.core_trends)), ""])
 
     if result.sentiment_controversy:
-        lines.extend(["<b>舆论风向争议</b>", _escape_html(_format_list_content(result.sentiment_controversy)), ""])
+        lines.extend(["<b>舆论风向争议</b>", _render_inline_links_html(_format_list_content(result.sentiment_controversy)), ""])
 
     if result.signals:
-        lines.extend(["<b>异动与弱信号</b>", _escape_html(_format_list_content(result.signals)), ""])
+        lines.extend(["<b>异动与弱信号</b>", _render_inline_links_html(_format_list_content(result.signals)), ""])
 
     if result.rss_insights:
-        lines.extend(["<b>RSS 深度洞察</b>", _escape_html(_format_list_content(result.rss_insights)), ""])
+        lines.extend(["<b>RSS 深度洞察</b>", _render_inline_links_html(_format_list_content(result.rss_insights)), ""])
+
+    if result.github_projects:
+        lines.extend(["<b>GitHub 项目速览</b>", _render_inline_links_html(_format_list_content(result.github_projects)), ""])
 
     if result.outlook_strategy:
-        lines.extend(["<b>研判策略建议</b>", _escape_html(_format_list_content(result.outlook_strategy)), ""])
+        lines.extend(["<b>研判策略建议</b>", _render_inline_links_html(_format_list_content(result.outlook_strategy)), ""])
 
     if result.standalone_summaries:
         summaries_text = _format_standalone_summaries(result.standalone_summaries)
         if summaries_text:
-            lines.extend(["<b>独立源点速览</b>", _escape_html(summaries_text)])
+            lines.extend(["<b>独立源点速览</b>", _render_inline_links_html(summaries_text)])
 
     return "\n".join(lines)
 
@@ -308,7 +344,7 @@ def render_ai_analysis_html_rich(result: AIAnalysisResult) -> str:
 
     if result.core_trends:
         content = _format_list_content(result.core_trends)
-        content_html = _escape_html(content).replace("\n", "<br>")
+        content_html = _render_inline_links_html(content).replace("\n", "<br>")
         ai_html += f"""
                     <div class="ai-block">
                         <div class="ai-block-title">核心热点态势</div>
@@ -317,7 +353,7 @@ def render_ai_analysis_html_rich(result: AIAnalysisResult) -> str:
 
     if result.sentiment_controversy:
         content = _format_list_content(result.sentiment_controversy)
-        content_html = _escape_html(content).replace("\n", "<br>")
+        content_html = _render_inline_links_html(content).replace("\n", "<br>")
         ai_html += f"""
                     <div class="ai-block">
                         <div class="ai-block-title">舆论风向争议</div>
@@ -326,7 +362,7 @@ def render_ai_analysis_html_rich(result: AIAnalysisResult) -> str:
 
     if result.signals:
         content = _format_list_content(result.signals)
-        content_html = _escape_html(content).replace("\n", "<br>")
+        content_html = _render_inline_links_html(content).replace("\n", "<br>")
         ai_html += f"""
                     <div class="ai-block">
                         <div class="ai-block-title">异动与弱信号</div>
@@ -335,16 +371,25 @@ def render_ai_analysis_html_rich(result: AIAnalysisResult) -> str:
 
     if result.rss_insights:
         content = _format_list_content(result.rss_insights)
-        content_html = _escape_html(content).replace("\n", "<br>")
+        content_html = _render_inline_links_html(content).replace("\n", "<br>")
         ai_html += f"""
                     <div class="ai-block">
                         <div class="ai-block-title">RSS 深度洞察</div>
                         <div class="ai-block-content">{content_html}</div>
                     </div>"""
 
+    if result.github_projects:
+        content = _format_list_content(result.github_projects)
+        content_html = _render_inline_links_html(content).replace("\n", "<br>")
+        ai_html += f"""
+                    <div class="ai-block">
+                        <div class="ai-block-title">GitHub 项目速览</div>
+                        <div class="ai-block-content">{content_html}</div>
+                    </div>"""
+
     if result.outlook_strategy:
         content = _format_list_content(result.outlook_strategy)
-        content_html = _escape_html(content).replace("\n", "<br>")
+        content_html = _render_inline_links_html(content).replace("\n", "<br>")
         ai_html += f"""
                     <div class="ai-block">
                         <div class="ai-block-title">研判策略建议</div>
@@ -354,7 +399,7 @@ def render_ai_analysis_html_rich(result: AIAnalysisResult) -> str:
     if result.standalone_summaries:
         summaries_text = _format_standalone_summaries(result.standalone_summaries)
         if summaries_text:
-            summaries_html = _escape_html(summaries_text).replace("\n", "<br>")
+            summaries_html = _render_inline_links_html(summaries_text).replace("\n", "<br>")
             ai_html += f"""
                     <div class="ai-block">
                         <div class="ai-block-title">独立源点速览</div>

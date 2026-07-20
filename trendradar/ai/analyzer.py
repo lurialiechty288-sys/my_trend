@@ -22,6 +22,7 @@ class AIAnalysisResult:
     sentiment_controversy: str = ""      # 舆论风向与争议
     signals: str = ""                    # 异动与弱信号
     rss_insights: str = ""               # RSS 深度洞察
+    github_projects: str = ""            # GitHub 项目用途与解决的问题
     outlook_strategy: str = ""           # 研判与策略建议
     standalone_summaries: Dict[str, str] = field(default_factory=dict)  # 独立展示区概括 {源ID: 概括}
 
@@ -312,6 +313,10 @@ class AIAnalyzer:
                             timeline_str = self._format_rank_timeline(rank_timeline)
                             line += f" | 轨迹:{timeline_str}"
 
+                        url = t.get("url") or t.get("mobile_url") or t.get("mobileUrl")
+                        if url:
+                            line += f" | URL:{url}"
+
                         news_lines.append(line)
 
                         news_count += 1
@@ -350,6 +355,12 @@ class AIAnalyzer:
                             line = f"- {title}"
                         if time_display:
                             line += f" | {time_display}"
+                        summary = t.get("summary", "")
+                        if summary:
+                            line += f" | 摘要:{summary[:240]}"
+                        url = t.get("url") or t.get("mobile_url") or t.get("mobileUrl")
+                        if url:
+                            line += f" | URL:{url}"
                         rss_lines.append(line)
 
                         rss_count += 1
@@ -522,6 +533,10 @@ class AIAnalyzer:
                         timeline_str = self._format_rank_timeline(rank_timeline)
                         line += f" | 轨迹:{timeline_str}"
 
+                url = item.get("url") or item.get("mobileUrl") or item.get("mobile_url")
+                if url:
+                    line += f" | URL:{url}"
+
                 lines.append(line)
             lines.append("")
 
@@ -543,6 +558,13 @@ class AIAnalyzer:
                 published_at = item.get("published_at", "")
                 if published_at:
                     line += f" | {published_at}"
+
+                summary = item.get("summary", "")
+                if summary:
+                    line += f" | 摘要:{summary[:240]}"
+                url = item.get("url", "")
+                if url:
+                    line += f" | URL:{url}"
 
                 lines.append(line)
             lines.append("")
@@ -626,6 +648,7 @@ class AIAnalyzer:
             result.sentiment_controversy = data.get("sentiment_controversy", "")
             result.signals = data.get("signals", "")
             result.rss_insights = data.get("rss_insights", "")
+            result.github_projects = data.get("github_projects", "")
             result.outlook_strategy = data.get("outlook_strategy", "")
 
             # 解析独立展示区概括

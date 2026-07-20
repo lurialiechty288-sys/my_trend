@@ -6,6 +6,7 @@
 """
 
 from datetime import datetime
+from html import escape as html_escape
 from typing import Dict, List, Optional, Callable
 
 from trendradar.report.formatter import format_title_for_platform
@@ -1454,11 +1455,11 @@ def _format_rss_item_line(
             item_line += f" <font color='grey'>- {friendly_time}</font>"
     elif format_type == "telegram":
         if url:
-            item_line = f"  {index}. {title} ({url})"
+            item_line = f'  {index}. <a href="{html_escape(url, quote=True)}">{html_escape(title)}</a>'
         else:
-            item_line = f"  {index}. {title}"
+            item_line = f"  {index}. {html_escape(title)}"
         if friendly_time:
-            item_line += f" - {friendly_time}"
+            item_line += f" - {html_escape(friendly_time)}"
     else:
         if url:
             item_line = f"  {index}. [{title}]({url})"
@@ -1765,15 +1766,15 @@ def _format_standalone_platform_item(item: Dict, index: int, format_type: str, r
 
     elif format_type == "telegram":
         if url:
-            item_line = f"  {index}. {title} ({url})"
+            item_line = f'  {index}. <a href="{html_escape(url, quote=True)}">{html_escape(title)}</a>'
         else:
-            item_line = f"  {index}. {title}"
+            item_line = f"  {index}. {html_escape(title)}"
         if rank_display:
             item_line += f" {rank_display}"
         if time_display:
-            item_line += f" - {time_display}"
+            item_line += f" - {html_escape(time_display)}"
         if count_display:
-            item_line += f" {count_display}"
+            item_line += f" {html_escape(count_display)}"
 
     elif format_type == "slack":
         if url:
@@ -1846,11 +1847,11 @@ def _format_standalone_rss_item(
             item_line += f" <font color='grey'>- {meta_str}</font>"
     elif format_type == "telegram":
         if url:
-            item_line = f"  {index}. {title} ({url})"
+            item_line = f'  {index}. <a href="{html_escape(url, quote=True)}">{html_escape(title)}</a>'
         else:
-            item_line = f"  {index}. {title}"
+            item_line = f"  {index}. {html_escape(title)}"
         if meta_str:
-            item_line += f" - {meta_str}"
+            item_line += f" - {html_escape(meta_str)}"
     elif format_type == "slack":
         if url:
             item_line = f"  {index}. <{url}|{title}>"
