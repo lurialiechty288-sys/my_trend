@@ -41,7 +41,7 @@ app:
 # ===============================================================
 schedule:
   enabled: true                         # 是否启用调度系统（true=启用, false=关闭，默认关闭）
-  preset: "morning_evening"             # 预设模板名称（见上方说明）
+  preset: "twice_daily"                 # 预设模板名称（见上方说明）
 
 
 # ===============================================================
@@ -69,33 +69,15 @@ platforms:
     - id: "toutiao"
       name: "今日头条"
       expected_domain: "toutiao.com"
-    - id: "baidu"
-      name: "百度热搜"
-      expected_domain: "baidu.com"
     - id: "wallstreetcn-hot"
       name: "华尔街见闻"
       expected_domain: "wallstreetcn.com"
     - id: "thepaper"
       name: "澎湃新闻"
       expected_domain: "thepaper.cn"
-    - id: "bilibili-hot-search"
-      name: "bilibili 热搜"
-      expected_domain: "bilibili.com"
     - id: "cls-hot"
       name: "财联社热门"
       expected_domain: "cls.cn"
-    - id: "ifeng"
-      name: "凤凰网"
-      expected_domain: "ifeng.com"
-    - id: "tieba"
-      name: "贴吧"
-      expected_domain: "baidu.com"
-    - id: "weibo"
-      name: "微博"
-      expected_domain: "weibo.com"
-    - id: "douyin"
-      name: "抖音"
-      expected_domain: "douyin.com"
     - id: "zhihu"
       name: "知乎"
       expected_domain: "zhihu.com"
@@ -131,15 +113,71 @@ rss:
       name: "Hacker News"
       url: "https://hnrss.org/frontpage"
 
-    - id: "ruanyifeng"
-      name: "阮一峰的网络日志"
-      url: "http://www.ruanyifeng.com/blog/atom.xml"
-      enabled: false                  # 禁用
-      # max_age_days: 3               # 示例：推送 3 天内的文章（更新较慢的博客）
-     
-    - id: "yahoo-finance"
-      name: "雅虎财经"
-      url: "https://finance.yahoo.com/news/rssindex"
+    - id: "github-trending-daily"
+      name: "GitHub Trending Daily"
+      url: "https://mshibanami.github.io/GitHubTrendingRSS/daily/all.xml"
+
+    - id: "github-trending-weekly"
+      name: "GitHub Trending Weekly"
+      url: "https://mshibanami.github.io/GitHubTrendingRSS/weekly/all.xml"
+      max_age_days: 2
+
+    - id: "github-blog-ai"
+      name: "GitHub Blog AI"
+      url: "https://github.blog/ai-and-ml/feed/"
+      max_age_days: 2
+
+    - id: "reddit-local-llama"
+      name: "Reddit LocalLLaMA"
+      url: "https://www.reddit.com/r/LocalLLaMA/.rss"
+
+    - id: "reddit-openai"
+      name: "Reddit OpenAI"
+      url: "https://www.reddit.com/r/OpenAI/.rss"
+
+    - id: "reddit-programming"
+      name: "Reddit Programming"
+      url: "https://www.reddit.com/r/programming/.rss"
+
+    - id: "reddit-opensource"
+      name: "Reddit Open Source"
+      url: "https://www.reddit.com/r/opensource/.rss"
+
+    - id: "x-openai"
+      name: "X OpenAI"
+      url: "https://nitter.net/OpenAI/rss"
+
+    - id: "x-deepseek"
+      name: "X DeepSeek"
+      url: "https://nitter.net/deepseek_ai/rss"
+
+    - id: "x-google-deepmind"
+      name: "X Google DeepMind"
+      url: "https://nitter.net/GoogleDeepMind/rss"
+
+    - id: "x-karpathy"
+      name: "X Andrej Karpathy"
+      url: "https://nitter.net/karpathy/rss"
+
+    - id: "youtube-openai"
+      name: "YouTube OpenAI"
+      url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCXZCJLdBC09xxGZ6gcdrc6A"
+      max_age_days: 3
+
+    - id: "youtube-google-deepmind"
+      name: "YouTube Google DeepMind"
+      url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCP7jMXSY2xbc3KCAE0MHQ-A"
+      max_age_days: 3
+
+    - id: "youtube-github"
+      name: "YouTube GitHub"
+      url: "https://www.youtube.com/feeds/videos.xml?channel_id=UC7c3Kb6jYCRj4JOHHZTxKsQ"
+      max_age_days: 3
+
+    - id: "youtube-two-minute-papers"
+      name: "YouTube Two Minute Papers"
+      url: "https://www.youtube.com/feeds/videos.xml?channel_id=UCbfYPyITQ-7l4upoX8nvctg"
+      max_age_days: 3
 
     # 自定义源示例
     # - id: "custom-feed"
@@ -239,14 +277,14 @@ display:
                                       # 注：热点词汇统计中的新增标记🆕不受此配置影响
 
     rss: true                         # RSS 订阅区域（true=显示并分析, false=隐藏并跳过分析）
-    standalone: false                 # 独立展示区：完整热榜/RSS，不受关键词过滤（true=显示, false=隐藏）
+    standalone: true                  # 独立展示区：完整热榜/RSS，不受关键词过滤（true=显示, false=隐藏）
     ai_analysis: true                 # AI 分析区域（true=显示, false=隐藏）
 
   # 独立展示区：将指定平台/RSS 完整展示，不受关键词过滤
   # 推送展示由 regions.standalone 控制，AI 分析由 ai_analysis.include_standalone 控制
   standalone:
-    platforms: ["zhihu", "wallstreetcn-hot"]     # 热榜平台 ID 列表（如 ["zhihu", "weibo"]）
-    rss_feeds: []                                # RSS 源 ID 列表（如 ["hacker-news"]）
+    platforms: ["zhihu", "wallstreetcn-hot", "cls-hot"]     # 热榜平台 ID 列表（如 ["zhihu", "weibo"]）
+    rss_feeds: ["github-trending-daily", "hacker-news", "reddit-local-llama", "x-openai", "youtube-openai"]  # RSS 源 ID 列表（如 ["hacker-news"]）
     max_items: 20                                # 每个源最多展示条数（0=不限制）
 
 
@@ -424,7 +462,7 @@ ai_analysis:
   max_news_for_analysis: 100        # 参与分析的新闻数量上限（控制 token 成本的关键项）
                                     # 热榜优先占用配额，RSS 用剩余配额，独立展示区不受此限制
 
-  include_rss: false                # 是否包含 RSS 内容进行分析（true=包含, false=不包含）
+  include_rss: true                 # 是否包含 RSS 内容进行分析（true=包含, false=不包含）
   include_standalone: true          # 是否纳入独立展示区数据（true=纳入, false=不纳入）
 
   include_rank_timeline: false      # 排名时间线详细程度
