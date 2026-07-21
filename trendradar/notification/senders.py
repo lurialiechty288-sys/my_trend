@@ -18,6 +18,8 @@
 import smtplib
 import time
 import json
+import html as html_lib
+import re
 from datetime import datetime
 from email.header import Header
 from email.mime.multipart import MIMEMultipart
@@ -63,6 +65,27 @@ def _render_ai_analysis(ai_analysis: Any, channel: str) -> str:
         return renderer(ai_analysis)
     except ImportError:
         return ""
+
+
+def _telegram_html_to_plain_text(content: str) -> str:
+    """把 Telegram HTML 降级为可发送的纯文本，并保留链接地址。"""
+    if not content:
+        return ""
+
+    def replace_link(match: re.Match) -> str:
+        url = html_lib.unescape(match.group(1))
+        label = re.sub(r"<[^>]+>", "", match.group(2))
+        label = html_lib.unescape(label).strip()
+        return f"{label} ({url})" if label else url
+
+    plain = re.sub(
+        r'<a\s+[^>]*href=["\']([^"\']+)["\'][^>]*>(.*?)</a>',
+        replace_link,
+        content,
+        flags=re.IGNORECASE | re.DOTALL,
+    )
+    plain = re.sub(r"<[^>]+>", "", plain)
+    return html_lib.unescape(plain)
 
 
 # === SMTP 邮件配置 ===
@@ -572,8 +595,38 @@ def send_to_telegram(
                     )
                     return False
             else:
+                error_detail = response.text.strip() if response.text else "无响应正文"
                 print(
-                    f"{log_prefix}第 {i}/{len(batches)} 批次发送失败 [{report_type}]，状态码：{response.status_code}"
+                    f"{log_prefix}第 {i}/{len(batches)} 批次 HTML 发送失败 [{report_type}]，"
+                    f"状态码：{response.status_code}，响应：{error_detail}"
+                )
+                # Telegram 对 HTML 实体非常严格。格式异常时降级为纯文本重试，
+                # 避免整份日报因为单条新闻标题或 URL 中的特殊字符而完全丢失。
+                fallback_payload = {
+                    "chat_id": chat_id,
+                    "text": _telegram_html_to_plain_text(batch_content),
+                    "disable_web_page_preview": True,
+                }
+                retry_response = requests.post(
+                    url,
+                    headers=headers,
+                    json=fallback_payload,
+                    proxies=proxies,
+                    timeout=30,
+                )
+                if retry_response.status_code == 200 and retry_response.json().get("ok"):
+                    print(
+                        f"{log_prefix}第 {i}/{len(batches)} 批次已降级为纯文本发送成功 "
+                        f"[{report_type}]"
+                    )
+                    if i < len(batches):
+                        time.sleep(batch_interval)
+                    continue
+
+                retry_detail = retry_response.text.strip() if retry_response.text else "无响应正文"
+                print(
+                    f"{log_prefix}第 {i}/{len(batches)} 批次降级重试失败 [{report_type}]，"
+                    f"状态码：{retry_response.status_code}，响应：{retry_detail}"
                 )
                 return False
         except Exception as e:

@@ -35,13 +35,15 @@ app:
 #   morning_evening → 全天推送 + 晚间当日汇总（推荐）
 #   office_hours    → 工作日三段式（到岗→午间→收工），周末增量自由推
 #   night_owl       → 午后速览 + 深夜全天汇总
+#   twice_daily     → 每天早晚 8 点各推送一次
+#   daily_morning   → 每天早上 8 点推送一次
 #   custom          → 完全自定义，详见 timeline.yaml
 #
 # 详细时间线图请查看 config/timeline.yaml
 # ===============================================================
 schedule:
   enabled: true                         # 是否启用调度系统（true=启用, false=关闭，默认关闭）
-  preset: "twice_daily"                 # 预设模板名称（见上方说明）
+  preset: "daily_morning"               # 每天早上 8 点分析并推送一次
 
 
 # ===============================================================
@@ -300,7 +302,7 @@ display:
 notification:
   enabled: true                       # 是否启用通知功能（true=启用, false=关闭）—— 总开关
                                       # 开启 schedule 后此项仍为总开关：false=永远不推送，true=由调度控制
-  max_news_items: 30                  # 单次推送最多展示 30 条新闻（跨热榜/RSS/独立源合计）
+  max_news_items: 50                  # 单次推送最多展示 50 条新闻（跨热榜/RSS/独立源合计）
 
   # 推送渠道配置
   channels:
@@ -460,7 +462,7 @@ ai_analysis:
                                     # follow_report = 跟随 report.mode（默认）
                                     # daily / current / incremental = 强制使用指定模式
 
-  max_news_for_analysis: 30         # 普通热榜+RSS 最多分析 30 条；独立源另按上方每源 5 条
+  max_news_for_analysis: 50         # 普通热榜+RSS 最多分析 50 条；独立源另按上方每源 5 条
                                     # 热榜优先占用配额，RSS 用剩余配额，独立展示区不受此限制
 
   include_rss: true                 # 是否包含 RSS 内容进行分析（true=包含, false=不包含）

@@ -898,8 +898,12 @@ class NewsAnalyzer:
                     scheduler = self.ctx.create_scheduler()
                     date_str = self.ctx.format_date()
                     scheduler.record_execution(schedule.period_key, "push", date_str)
+                return True
 
-            return True
+            print(f"[推送] 所有已配置渠道均发送失败：{results}")
+            if os.environ.get("GITHUB_ACTIONS", "").lower() == "true":
+                raise RuntimeError("通知发送失败，GitHub Actions 任务终止")
+            return False
 
         elif cfg["ENABLE_NOTIFICATION"] and not has_notification:
             print("⚠️ 警告：通知功能已启用但未配置任何通知渠道，将跳过通知发送")
